@@ -1,0 +1,422 @@
+<title>Lawn Audience Engine</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&family=Noto+Nastaliq+Urdu:wght@400&display=swap">
+<style>
+/* Layout: one scrolling dashboard, five numbered sections that follow the brief's five marketing questions, sticky filter bar on top. */
+:root {
+  --bg: #F3F4F8; --surface: #FFFFFF; --ink: #14172B; --muted: #565B76; --line: #DADDEA;
+  --accent: #3A3FA6; --accent-soft: #E4E6F8; --warn: #B4462F; --warn-soft: #F8E3DD; --ok: #1F7A5C;
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-urdu: "Noto Nastaliq Urdu", "Jameel Noori Nastaleeq", "Noto Naskh Arabic", serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1120; --surface: #181B31; --ink: #ECEEF9; --muted: #A2A8C6; --line: #2B2F4D;
+    --accent: #9298F2; --accent-soft: #272A52; --warn: #F08A70; --warn-soft: #3A2420; --ok: #5CCB9D; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1120; --surface: #181B31; --ink: #ECEEF9; --muted: #A2A8C6; --line: #2B2F4D;
+  --accent: #9298F2; --accent-soft: #272A52; --warn: #F08A70; --warn-soft: #3A2420; --ok: #5CCB9D; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55; margin: 0;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 56px;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+.wrap { max-width: 1120px; margin: 0 auto; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.08; font-weight: 700; }
+h2 { font-size: clamp(22px, 3.4vw, 30px); line-height: 1.15; font-weight: 600; }
+h3 { font-size: 16px; font-weight: 600; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* header */
+.hero { padding-block: 40px 28px; display: grid; gap: 18px; }
+.kicker { font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+.lede { max-width: 66ch; color: var(--muted); font-size: 16px; }
+.stats { display: flex; flex-wrap: wrap; gap: 10px 28px; padding-top: 6px; }
+.stat b { display: block; font-family: var(--font-display); font-size: 26px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat span { font-size: 12.5px; color: var(--muted); }
+.notice { background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; max-width: 78ch; }
+.notice strong { color: var(--warn); }
+
+/* sticky filter bar */
+.bar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line);
+  margin-inline: calc(-1 * max(16px, env(safe-area-inset-left, 0px))); padding-inline: max(16px, env(safe-area-inset-left, 0px));
+}
+.bar-in { max-width: 1120px; margin: 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; padding-block: 10px; }
+.nav { display: flex; gap: 4px; flex-wrap: wrap; }
+.nav a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; padding: 5px 9px; border-radius: 6px; }
+.nav a:hover { background: var(--accent-soft); color: var(--ink); }
+.nav a:focus-visible, button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.filters { display: flex; gap: 10px; flex-wrap: wrap; margin-left: auto; align-items: center; }
+.filters label { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+select { font: inherit; font-size: 13px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 5px 8px; max-width: 100%; }
+
+/* sections */
+section { padding-top: 56px; display: grid; gap: 20px; scroll-margin-top: 70px; }
+.sec-head { display: grid; gap: 6px; }
+.qno { font-family: var(--font-display); font-size: 13px; font-weight: 600; color: var(--accent); }
+.sec-head p { color: var(--muted); max-width: 68ch; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; flex-wrap: wrap; }
+.seg button { font: inherit; font-size: 13px; background: var(--surface); color: var(--muted); border: 0; padding: 6px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--surface); }
+.row-head > * { min-width: 0; max-width: 100%; }
+.row-head label { display: flex; align-items: center; gap: 6px; }
+.row-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+
+/* bars */
+.bars { display: grid; gap: 10px; }
+.bar-row { display: grid; grid-template-columns: minmax(110px, 170px) minmax(0, 1fr) 64px; gap: 10px; align-items: center; font-size: 13.5px; }
+.track { height: 18px; background: var(--accent-soft); border-radius: 4px; position: relative; overflow: hidden; }
+.fill { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 4px; }
+.bar-row .v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.bar-row.neg .fill { background: var(--warn); }
+.sub { font-size: 12px; color: var(--muted); }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { padding: 7px 9px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; }
+td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+td.wrapt { white-space: normal; min-width: 220px; color: var(--muted); }
+.heat td.cell { text-align: center; font-variant-numeric: tabular-nums; }
+.heat th, .heat td { padding: 6px 5px; }
+.heat th { white-space: normal; vertical-align: bottom; }
+.where { white-space: normal; min-width: 130px; }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-top: 10px; align-items: center; }
+.sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+
+/* segment cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 14px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.card header { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.card .big { font-family: var(--font-display); font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip { font-size: 12px; background: var(--accent-soft); color: var(--ink); padding: 2px 8px; border-radius: 999px; }
+.chip.warn { background: var(--warn-soft); color: var(--warn); }
+.mini { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 12px; color: var(--muted); }
+.mini b { display: block; color: var(--ink); font-size: 15px; font-variant-numeric: tabular-nums; }
+.ex { display: grid; gap: 4px; font-size: 13px; border-top: 1px dashed var(--line); padding-top: 9px; }
+.ex q { quotes: none; color: var(--muted); }
+.ur { font-family: var(--font-urdu); direction: rtl; text-align: right; line-height: 2; font-size: 14px; }
+.todo { font-size: 13.5px; border-left: 3px solid var(--accent); padding-left: 10px; }
+.langbar { display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: var(--line); }
+.langbar i { display: block; height: 100%; }
+
+/* anomalies */
+.tag { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); white-space: nowrap; }
+.tag.bad { background: var(--warn-soft); color: var(--warn); }
+svg text { fill: var(--muted); font-family: var(--font-body); font-size: 11px; }
+.chart svg { width: 100%; height: auto; display: block; }
+
+/* recs */
+.recs { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr)); gap: 14px; }
+.rec { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: grid; gap: 10px; align-content: start; }
+.rec .area { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); }
+.rec .ev { font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 10px; }
+.rec .ev b { color: var(--ink); font-weight: 600; }
+
+/* method */
+.steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.steps .panel p { font-size: 13.5px; color: var(--muted); margin-top: 6px; }
+code { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12.5px; background: var(--accent-soft); padding: 1px 5px; border-radius: 4px; }
+footer { padding-top: 56px; color: var(--muted); font-size: 13px; max-width: 78ch; }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width .25s ease; } }
+</style>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker">Audience analytics for a women's lawn campaign</div>
+    <h1>Lawn Audience Engine</h1>
+    <p class="lede">Reads thousands of English, Roman Urdu and Urdu comments from 11.11, 12.12, Eid and winter launch posts, groups them into customer needs, flags posts that behave unusually, and turns the findings into next steps for the marketing team.</p>
+    <div class="stats" id="stats"></div>
+    <p class="notice"><strong>Simulated data.</strong> Every post and comment here is generated by <code>01_generate_data.py</code> to demonstrate the method. Brands are labelled A, B and C. No figure describes a real brand. Replace the two CSV files with collected records and rerun the pipeline to get real findings.</p>
+  </header>
+
+  <div class="bar">
+    <div class="bar-in">
+      <nav class="nav" aria-label="Sections">
+        <a href="#q1">1 Content</a><a href="#q2">2 Wants</a><a href="#q3">3 Unusual</a><a href="#q4">4 Needs</a><a href="#q5">5 Next steps</a><a href="#method">Method</a>
+      </nav>
+      <div class="filters">
+        <label for="fPlat">Platform <select id="fPlat"></select></label>
+        <label for="fCamp">Campaign <select id="fCamp"></select></label>
+      </div>
+    </div>
+  </div>
+
+  <section id="q1">
+    <div class="sec-head"><div class="qno">Question 1</div><h2>Which content attracts attention?</h2>
+      <p>Median per post for each content type, using the platform and campaign filters above. Engagement rate is likes, comments and shares divided by views, so it only covers posts with public view counts.</p></div>
+    <div class="grid2">
+      <div class="panel">
+        <div class="row-head"><h3>Content types ranked</h3>
+          <div class="seg" id="metricSeg" role="group" aria-label="Metric"></div></div>
+        <div class="bars" id="q1bars"></div>
+        <p class="sub" id="q1note" style="margin-top:12px"></p>
+      </div>
+      <div class="panel">
+        <h3 style="margin-bottom:12px">Engagement rate by platform</h3>
+        <div class="scroll"><table class="heat" id="q1heat"></table></div>
+        <p class="sub" style="margin-top:10px">Darker cells mean a higher median engagement rate. Empty cells have no posts with view counts.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="q2">
+    <div class="sec-head"><div class="qno">Question 2</div><h2>What does the audience want?</h2>
+      <p>Share of all comments in each customer need, and which content type triggers each need most. The share of negative comments is shown under each name.</p></div>
+    <div class="grid2" style="grid-template-columns:minmax(0,.85fr) minmax(0,1.4fr)">
+      <div class="panel"><h3 style="margin-bottom:14px">Share of comments by need</h3><div class="bars" id="q2bars"></div></div>
+      <div class="panel"><h3 style="margin-bottom:12px">Which content triggers which need</h3>
+        <div class="scroll"><table class="heat" id="q2heat"></table></div>
+        <p class="sub" style="margin-top:10px">Each cell shows the share of that content type's comments. Bold cells are at least 1.4 times the overall share.</p></div>
+    </div>
+  </section>
+
+  <section id="q3">
+    <div class="sec-head"><div class="qno">Question 3</div><h2>Which marketing patterns are unusual?</h2>
+      <p>Each post is compared with posts on the same platform and of the same content type. An Isolation Forest flags the 5% that differ most across likes, comments, shares, engagement rate and the mix of complaints. These are leads to investigate, not verdicts.</p></div>
+    <div class="grid2" style="grid-template-columns:minmax(0,1fr) minmax(0,1.25fr)">
+      <div class="panel chart">
+        <div class="row-head"><h3>Likes against comments, one dot per post</h3></div>
+        <div id="scatter"></div>
+        <div class="legend"><span><i class="sw" style="background:var(--line)"></i>Typical post</span><span><i class="sw" style="background:var(--warn)"></i>Flagged for review</span><span id="scNote"></span></div>
+      </div>
+      <div class="panel">
+        <div class="row-head"><h3>Flagged posts</h3>
+          <label class="sub" for="fKind">Type <select id="fKind"></select></label></div>
+        <div class="scroll" style="max-height:420px;overflow-y:auto"><table id="anTable"></table></div>
+        <p class="sub" id="anNote" style="margin-top:10px"></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="q4">
+    <div class="sec-head"><div class="qno">Question 4</div><h2>Which audience needs should the brand address?</h2>
+      <p>Comment groups found by clustering, largest first. Each card shows how big the group is, how it speaks, where it concentrates, and what to do about it.</p></div>
+    <div class="cards" id="cards"></div>
+  </section>
+
+  <section id="q5">
+    <div class="sec-head"><div class="qno">Question 5</div><h2>What should the marketing team do next?</h2>
+      <p>Every recommendation carries the numbers behind it, calculated from the full dataset when the pipeline ran.</p></div>
+    <div class="recs" id="recs"></div>
+  </section>
+
+  <section id="method">
+    <div class="sec-head"><div class="qno">How it works</div><h2>Method, data and limits</h2></div>
+    <div class="steps" id="steps"></div>
+    <div class="panel"><h3 style="margin-bottom:10px">Data tables</h3>
+      <div class="scroll"><table>
+        <tr><th>Table A: posts</th><td class="wrapt">post_id, brand, platform, campaign, content_type, product_category, likes, comments_count, shares, views, days_since_post, data_source</td></tr>
+        <tr><th>Table B: comments</th><td class="wrapt">post_id, comment_text, language_type, topic, sentiment, purchase_intent, data_source</td></tr>
+        <tr><th>Provenance</th><td class="wrapt">Every row carries <code>data_source</code>. Here it is always <code>simulated</code>. Collected records should use <code>observed</code> and add source URL, collection date and reuse terms.</td></tr>
+      </table></div>
+    </div>
+    <div class="panel" id="validation"></div>
+  </section>
+
+  <footer>Built for a data science course project. Collect real comments only through methods each platform permits, keep personal details out of the dataset and respect the terms of the source.</footer>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(function () {
+  var D = JSON.parse(document.getElementById("data").textContent);
+  var M = D.meta, PL = M.platforms, CA = M.campaigns, CT = M.content_types, SEG = D.segments;
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (n) { return n.toLocaleString("en-US"); };
+  var pct = function (x, d) { return (x * 100).toFixed(d == null ? 1 : d) + "%"; };
+  var esc = function (s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); };
+  var median = function (a) { if (!a.length) return null; var s = a.slice().sort(function (x, y) { return x - y; }), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+  var isUrdu = function (t) { return /[؀-ۿ]/.test(t); };
+  var st = { plat: -1, camp: -1, metric: "rate" };
+
+  /* posts: [brand, plat, camp, ct, likes, comments, shares, views, days, anomaly, id] */
+  var posts = D.posts;
+  var filtered = function () { return posts.filter(function (p) { return (st.plat < 0 || p[1] === st.plat) && (st.camp < 0 || p[2] === st.camp); }); };
+  var rate = function (p) { return p[7] > 0 ? (p[4] + p[5] + Math.max(p[6], 0)) / p[7] : null; };
+
+  /* header stats */
+  var flagged = D.anomalies.length;
+  $("stats").innerHTML = [[fmt(M.n_posts), "posts"], [fmt(M.n_comments), "comments"], [SEG.length, "audience needs found"], [flagged, "posts flagged"]]
+    .map(function (x) { return '<div class="stat"><b>' + x[0] + "</b><span>" + x[1] + "</span></div>"; }).join("");
+
+  /* filters */
+  $("fPlat").innerHTML = '<option value="-1">All platforms</option>' + PL.map(function (p, i) { return '<option value="' + i + '">' + p + "</option>"; }).join("");
+  $("fCamp").innerHTML = '<option value="-1">All campaigns</option>' + CA.map(function (p, i) { return '<option value="' + i + '">' + p + "</option>"; }).join("");
+  $("fPlat").onchange = function () { st.plat = +this.value; render(); };
+  $("fCamp").onchange = function () { st.camp = +this.value; render(); };
+
+  /* Q1 */
+  var METRICS = {
+    rate: { label: "Engagement rate", get: rate, f: function (v) { return pct(v, 1); } },
+    likes: { label: "Likes", get: function (p) { return p[4]; }, f: fmt },
+    comments: { label: "Comments", get: function (p) { return p[5]; }, f: fmt },
+    shares: { label: "Shares", get: function (p) { return p[6] >= 0 ? p[6] : null; }, f: fmt }
+  };
+  $("metricSeg").innerHTML = Object.keys(METRICS).map(function (k) { return '<button type="button" data-k="' + k + '">' + METRICS[k].label + "</button>"; }).join("");
+  $("metricSeg").onclick = function (e) { var k = e.target.getAttribute("data-k"); if (k) { st.metric = k; render(); } };
+
+  function q1() {
+    var rows = filtered(), m = METRICS[st.metric];
+    Array.prototype.forEach.call($("metricSeg").children, function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-k") === st.metric ? "true" : "false"); });
+    var out = CT.map(function (name, i) {
+      var sub = rows.filter(function (p) { return p[3] === i; });
+      var vals = sub.map(m.get).filter(function (v) { return v != null; });
+      return { name: name, n: sub.length, v: median(vals), nv: vals.length };
+    }).filter(function (r) { return r.v != null; }).sort(function (a, b) { return b.v - a.v; });
+    var mx = out.length ? out[0].v : 1;
+    $("q1bars").innerHTML = out.length ? out.map(function (r) {
+      return '<div class="bar-row"><div>' + esc(r.name) + '<div class="sub">' + fmt(r.nv) + ' posts</div></div><div class="track"><div class="fill" style="width:' + (r.v / mx * 100).toFixed(1) + '%"></div></div><div class="v">' + m.f(r.v) + "</div></div>";
+    }).join("") : '<p class="muted">No posts match these filters.</p>';
+    if (out.length > 1) {
+      var a = out[0], z = out[out.length - 1];
+      $("q1note").textContent = a.name + " leads on median " + m.label.toLowerCase() + " (" + m.f(a.v) + "). " + z.name + " is lowest (" + m.f(z.v) + ").";
+    } else $("q1note").textContent = "";
+    /* heat: content type x platform, engagement rate, campaign filter only */
+    var base = posts.filter(function (p) { return st.camp < 0 || p[2] === st.camp; });
+    var cells = CT.map(function (_, i) { return PL.map(function (_, j) {
+      var v = base.filter(function (p) { return p[3] === i && p[1] === j; }).map(rate).filter(function (x) { return x != null; });
+      return v.length >= 5 ? median(v) : null; }); });
+    var all = [].concat.apply([], cells).filter(function (x) { return x != null; });
+    var lo = Math.min.apply(null, all), hi = Math.max.apply(null, all);
+    $("q1heat").innerHTML = "<tr><th></th>" + PL.map(function (p) { return '<th class="r">' + p + "</th>"; }).join("") + "</tr>" +
+      CT.map(function (c, i) { return "<tr><td>" + c + "</td>" + PL.map(function (_, j) {
+        var v = cells[i][j]; if (v == null) return '<td class="cell muted">–</td>';
+        var t = hi > lo ? (v - lo) / (hi - lo) : 0.5;
+        return '<td class="cell" style="background:color-mix(in srgb, var(--accent) ' + Math.round(12 + t * 58) + '%, var(--surface))">' + pct(v, 1) + "</td>"; }).join("") + "</tr>"; }).join("");
+  }
+
+  /* segment rows: [plat, camp, ct, seg, n, neg] */
+  function segRows() { return D.seg_rows.filter(function (r) { return (st.plat < 0 || r[0] === st.plat) && (st.camp < 0 || r[1] === st.camp); }); }
+  function q2() {
+    var rows = segRows(), tot = 0, bySeg = SEG.map(function () { return { n: 0, neg: 0 }; });
+    var byCT = CT.map(function () { return { n: 0, s: SEG.map(function () { return 0; }) }; });
+    rows.forEach(function (r) { tot += r[4]; bySeg[r[3]].n += r[4]; bySeg[r[3]].neg += r[5]; byCT[r[2]].n += r[4]; byCT[r[2]].s[r[3]] += r[4]; });
+    var order = SEG.map(function (_, i) { return i; }).sort(function (a, b) { return bySeg[b].n - bySeg[a].n; });
+    var mx = Math.max.apply(null, bySeg.map(function (b) { return b.n; })) || 1;
+    $("q2bars").innerHTML = tot ? order.map(function (i) {
+      var b = bySeg[i], ng = b.n ? b.neg / b.n : 0;
+      return '<div class="bar-row"><div>' + esc(SEG[i].name) + '<div class="sub">' + pct(ng, 0) + ' negative</div></div><div class="track"><div class="fill" style="width:' + (b.n / mx * 100).toFixed(1) + '%"></div></div><div class="v">' + pct(b.n / tot, 1) + "</div></div>";
+    }).join("") : '<p class="muted">No comments match these filters.</p>';
+    /* heat: rows = segments (wide tables scroll), cols = content types */
+    var head = "<tr><th>Need</th>" + CT.map(function (c) { return '<th class="r">' + c + "</th>"; }).join("") + "</tr>";
+    $("q2heat").innerHTML = head + order.map(function (i) {
+      var all = bySeg[i].n / (tot || 1);
+      return "<tr><td>" + esc(SEG[i].name) + "</td>" + CT.map(function (_, c) {
+        var sh = byCT[c].n ? byCT[c].s[i] / byCT[c].n : 0, lift = all ? sh / all : 0, hot = lift >= 1.4;
+        var t = Math.min(1, Math.max(0, (lift - 0.6) / 1.6));
+        return '<td class="cell" style="background:color-mix(in srgb, var(--accent) ' + Math.round(6 + t * 55) + '%, var(--surface));' + (hot ? "font-weight:700" : "") + '">' + pct(sh, 0) + "</td>";
+      }).join("") + "</tr>";
+    }).join("");
+  }
+
+  /* Q3 */
+  var KINDS = Array.from(new Set(D.anomalies.map(function (a) { return a.kind; }))).sort();
+  $("fKind").innerHTML = '<option value="">All types</option>' + KINDS.map(function (k) { return "<option>" + k + "</option>"; }).join("");
+  $("fKind").onchange = function () { q3(); };
+  function q3() {
+    var rows = filtered();
+    var W = 640, H = 360, L = 58, R = 30, T = 12, B = 40;
+    var xs = rows.map(function (p) { return Math.log10(Math.max(p[4], 1)); }), ys = rows.map(function (p) { return Math.log10(Math.max(p[5], 1)); });
+    if (!rows.length) { $("scatter").innerHTML = '<p class="muted">No posts match these filters.</p>'; }
+    else {
+      var x0 = Math.floor(Math.min.apply(null, xs)), x1 = Math.ceil(Math.max.apply(null, xs)), y0 = Math.floor(Math.min.apply(null, ys)), y1 = Math.ceil(Math.max.apply(null, ys));
+      if (x1 === x0) x1++; if (y1 === y0) y1++;
+      var X = function (v) { return L + (v - x0) / (x1 - x0) * (W - L - R); }, Y = function (v) { return H - B - (v - y0) / (y1 - y0) * (H - T - B); };
+      var s = '<svg viewBox="0 0 ' + W + " " + H + '" role="img" aria-label="Scatter plot of likes against comments for each post, flagged posts highlighted">';
+      for (var a = x0; a <= x1; a++) s += '<line x1="' + X(a) + '" x2="' + X(a) + '" y1="' + T + '" y2="' + (H - B) + '" stroke="var(--line)" stroke-width="1"/><text x="' + X(a) + '" y="' + (H - B + 16) + '" text-anchor="middle">' + fmt(Math.pow(10, a)) + "</text>";
+      for (var b = y0; b <= y1; b++) s += '<line y1="' + Y(b) + '" y2="' + Y(b) + '" x1="' + L + '" x2="' + (W - R) + '" stroke="var(--line)" stroke-width="1"/><text x="' + (L - 6) + '" y="' + (Y(b) + 4) + '" text-anchor="end">' + fmt(Math.pow(10, b)) + "</text>";
+      s += '<text x="' + ((L + W - R) / 2) + '" y="' + (H - 6) + '" text-anchor="middle">Likes (log scale)</text><text transform="translate(10 ' + ((T + H - B) / 2) + ') rotate(-90)" text-anchor="middle">Comments (log scale)</text>';
+      var typ = "", fl = "";
+      rows.forEach(function (p, i) {
+        var c = '<circle cx="' + X(xs[i]).toFixed(1) + '" cy="' + Y(ys[i]).toFixed(1) + '" ';
+        if (p[9]) fl += c + 'r="4" fill="var(--warn)" fill-opacity=".85" stroke="var(--surface)" stroke-width="1"><title>' + p[10] + ": " + fmt(p[4]) + " likes, " + fmt(p[5]) + " comments</title></circle>";
+        else typ += c + 'r="2.3" fill="var(--muted)" fill-opacity=".35"/>';
+      });
+      $("scatter").innerHTML = s + typ + fl + "</svg>";
+    }
+    var nf = rows.filter(function (p) { return p[9]; }).length;
+    $("scNote").textContent = fmt(rows.length) + " posts shown, " + nf + " flagged";
+    var kind = $("fKind").value;
+    var an = D.anomalies.filter(function (a) {
+      return (st.plat < 0 || a.platform === PL[st.plat]) && (st.camp < 0 || a.campaign === CA[st.camp]) && (!kind || a.kind === kind); });
+    var bad = { "Delivery complaints spike": 1, "Price backlash": 1, "Negative comment spike": 1 };
+    $("anTable").innerHTML = "<tr><th>Post</th><th>Type</th><th class='r'>Likes</th><th class='r'>Comments</th><th>Where</th><th>Why it stands out</th></tr>" +
+      an.slice(0, 60).map(function (a) { return "<tr><td>" + a.post_id + "</td><td><span class='tag" + (bad[a.kind] ? " bad" : "") + "'>" + a.kind + "</span></td><td class='r'>" + fmt(a.likes) + "</td><td class='r'>" + fmt(a.comments) + "</td><td class='where'>" + a.platform + " · " + esc(a.campaign) + "<div class='sub'>" + esc(a.content_type) + "</div></td><td class='wrapt'>" + esc(a.reason) + "</td></tr>"; }).join("") +
+      (an.length ? "" : "<tr><td colspan='6' class='muted'>No flagged posts match these filters.</td></tr>");
+    $("anNote").textContent = an.length > 60 ? "Showing the 60 highest-scoring of " + an.length + " flagged posts." : an.length + " flagged post" + (an.length === 1 ? "" : "s") + ".";
+  }
+
+  /* Q4 cards */
+  var HANDLING = {
+    price_inquiry: "Put the price in the caption or on the first frame so people stop asking in the comments.",
+    price_complaint: "Add a value line (fabric weight, embroidery, set contents) next to the price and test an entry-price piece.",
+    discount_request: "Announce sale dates and codes up front. Reply to every discount question with the same pinned answer.",
+    delivery_inquiry: "Pin delivery times and charges by city. Add the answer to the caption on sale posts.",
+    delivery_complaint: "Reply within 24 hours with a tracking link and flag these comments to the order team.",
+    availability: "Pin a city-wise stock list and say clearly when a design is sold out.",
+    sizing: "Add a size chart card and the shirt length to every product photo.",
+    fabric_quality: "Show close-ups of the fabric, a wash note and the stitching. Answer shrinkage questions once, in a pinned comment.",
+    praise: "Reuse these comments as social proof, and ask these fans to tag a friend.",
+    purchase_intent: "Reply fast with an order link or WhatsApp number. These are the closest to buying."
+  };
+  var LC = { English: "var(--accent)", "Roman Urdu": "var(--ok)", Urdu: "var(--warn)" };
+  function q4() {
+    var rows = segRows(), tot = 0, bySeg = SEG.map(function () { return { n: 0, neg: 0, ct: CT.map(function () { return 0; }), ca: CA.map(function () { return 0; }) }; });
+    var ctTot = CT.map(function () { return 0; }), caTot = CA.map(function () { return 0; });
+    rows.forEach(function (r) { tot += r[4]; var b = bySeg[r[3]]; b.n += r[4]; b.neg += r[5]; b.ct[r[2]] += r[4]; b.ca[r[1]] += r[4]; ctTot[r[2]] += r[4]; caTot[r[1]] += r[4]; });
+    var order = SEG.map(function (_, i) { return i; }).sort(function (a, b) { return bySeg[b].n - bySeg[a].n; });
+    var top = function (arr, totals, all) { var best = -1, bl = 0; arr.forEach(function (v, i) { if (totals[i] > 40 && all) { var l = (v / totals[i]) / all; if (l > bl) { bl = l; best = i; } } }); return [best, bl]; };
+    $("cards").innerHTML = order.map(function (i) {
+      var s = SEG[i], b = bySeg[i], share = tot ? b.n / tot : 0, all = share;
+      var c1 = top(b.ct, ctTot, all), c2 = top(b.ca, caTot, all);
+      var exs = s.examples.slice(0, 3).map(function (t) { return isUrdu(t) ? '<q class="ur" lang="ur">' + esc(t) + "</q>" : "<q>" + esc(t) + "</q>"; }).join("");
+      var lang = ["English", "Roman Urdu", "Urdu"].map(function (l) { return '<i title="' + l + " " + pct(s.lang[l], 0) + '" style="width:' + (s.lang[l] * 100) + "%;background:" + LC[l] + '"></i>'; }).join("");
+      var chips = (c1[0] >= 0 ? '<span class="chip">Most on ' + esc(CT[c1[0]]) + "</span>" : "") + (c2[0] >= 0 ? '<span class="chip">Most in ' + esc(CA[c2[0]]) + "</span>" : "");
+      var neg = b.n ? b.neg / b.n : 0;
+      return '<article class="card"><header><h3>' + esc(s.name) + '</h3><div class="big">' + pct(share, 1) + '</div></header>' +
+        '<div class="mini"><div><b>' + fmt(b.n) + '</b>comments</div><div><b>' + pct(neg, 0) + '</b>negative</div><div><b>' + pct(s.high_intent_share, 0) + '</b>ready to buy</div></div>' +
+        '<div><div class="langbar" role="img" aria-label="Language mix">' + lang + '</div><div class="sub" style="margin-top:4px">English ' + pct(s.lang.English, 0) + " · Roman Urdu " + pct(s.lang["Roman Urdu"], 0) + " · Urdu " + pct(s.lang.Urdu, 0) + "</div></div>" +
+        '<div class="chips">' + chips + (neg > 0.5 ? '<span class="chip warn">Mostly negative</span>' : "") + "</div>" +
+        '<div class="todo">' + HANDLING[s.topic] + "</div>" +
+        '<div class="ex"><div class="sub">Typical comments</div>' + exs + "</div></article>";
+    }).join("");
+  }
+
+  /* Q5 */
+  $("recs").innerHTML = D.recs.map(function (r) {
+    return '<article class="rec"><div class="area">' + esc(r.area) + "</div><h3>" + esc(r.title) + "</h3><p>" + esc(r.action) + '</p><p class="ev"><b>Evidence.</b> ' + esc(r.evidence) + "</p></article>";
+  }).join("");
+
+  /* method */
+  $("steps").innerHTML = [
+    ["Prepare", "Posts and comments are loaded from two CSV files. Text is lower-cased and stripped of punctuation and emoji."],
+    ["Normalise languages", "A seed lexicon maps English, Roman Urdu and Urdu keywords to shared concepts, so \"price\", \"kitne ka\" and \"قیمت\" count as the same signal."],
+    ["Cluster", "TF-IDF and concept features go into k-means, run separately for each language. Clusters that express the same need are merged into one segment."],
+    ["Compare posts", "Each post is scored against posts on the same platform and content type with robust z-scores, then an Isolation Forest ranks the oddest 5%."],
+    ["Recommend", "Rules read the tables above and write each action with its supporting numbers."]
+  ].map(function (s, i) { return '<div class="panel"><h3>' + (i + 1) + ". " + s[0] + "</h3><p>" + s[1] + "</p></div>"; }).join("");
+  var ck = M.check;
+  $("validation").innerHTML = "<h3 style=\"margin-bottom:8px\">What was checked, and what it does not prove</h3>" +
+    '<p class="muted" style="max-width:80ch">The comment segments match the topic label of ' + pct(M.purity, 1) + " of comments. That number is high because the simulated comments are short template phrases and the lexicon was written for them. Real comments are messier, so expect a lower figure and plan to add words to the lexicon. " +
+    "Of " + ck.planted + " posts that were deliberately given unusual behaviour (viral, dead, price backlash, delivery crisis), the detector caught " + ck.caught + " (" + pct(ck.recall, 0) + " recall) and " + pct(ck.precision, 0) + " of its " + ck.flagged + " flags were planted ones. Real posts will also be flagged for reasons the simulation does not contain, so each flag needs a human look.</p>";
+
+  function render() { q1(); q2(); q3(); q4(); }
+  render();
+})();
+</script>
